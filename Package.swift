@@ -5,7 +5,7 @@ import PackageDescription
 
 let package = Package(
 	name: "PyWebViews",
-	platforms: [.iOS(.v14)],
+	platforms: [.iOS(.v13)],
 	products: [
 		.library(name: "PyWebViews", targets: ["PyWebViews"])
 	],
