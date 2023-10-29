@@ -10,7 +10,7 @@ let package = Package(
 		.library(name: "PyWebViews", targets: ["PyWebViews"])
 	],
 	dependencies: [
-        .package(url: "https://github.com/PythonSwiftLink/KivySwiftLink", from: .init(310, 0, 0)),
+        .package(url: "https://github.com/PythonSwiftLink/KivySwiftLink", from: .init(311, 0, 0)),
         .package(url: "https://github.com/PythonSwiftLink/SwiftonizePlugin", from: .init(0, 0, 0)),
 	],
 	targets: [
