@@ -9,31 +9,39 @@ import Foundation
 
 import WebKit
 import UIKit
+import PythonCore
+//import KivyTex
+
+import KivyTexture
+import UIViewRender
 
 fileprivate let retinaScale = 1.0 / UIScreen.main.nativeScale
 fileprivate let screen_size = UIScreen.main.nativeBounds
 
+let ui_scale = UIScreen.main.scale
+
 
 fileprivate func invertedHeight(_ v: Double) -> Double {
     var result: Double = 0
-    let o = UIDevice.current.orientation
-    if o.isLandscape {
-        result = screen_size.width - v
-    } else if o.isLandscape {
-        result = screen_size.height - v
-    }
-//    if o.isFlat {
-//        fatalError()
-//    }
-//    switch UIDevice.current.orientation {
-//    case .landscapeLeft, .landscapeRight:
-//        result = screen_size.width - v
-//    case .portrait, .portraitUpsideDown:
-//        result = screen_size.height - v
-//   default:
-//        result = 0
-//    }
-    print("invertedHeight:",result, "isFlat",UIDevice.current.orientation.isFlat)
+	let device = UIDevice.current
+    let o = device.orientation
+	
+	switch o {
+	case .portrait, .portraitUpsideDown:
+		result = screen_size.height - v
+	case .landscapeLeft, .landscapeRight:
+		result = screen_size.width - v
+	default:
+		let size = screen_size
+		let w = size.width
+		let h = size.height
+		if w > h {
+			result = h - v
+		} else {
+			result = w - v
+		}
+	}
+	
     return result
 }
 
@@ -41,32 +49,50 @@ fileprivate extension Double {
     var retinaScaled: Self { self * retinaScale }
 }
 
+public protocol WKBase {
+	var view: WKWebView { get }
+}
 
-public class WebViewer {
+extension WKBase {
+	public func set_pos(x: Double, y: Double) {
+		view.frame.origin = .init(x: x.retinaScaled, y: invertedHeight(y).retinaScaled)
+	}
+	public func set_size(w: Double, h: Double) {
+		view.frame.size = .init(width: w.retinaScaled, height: h.retinaScaled)
+	}
+}
+
+public class WebViewer: WKBase {
     
-    let view = WKWebView()
+    public let view = WKWebView()
     var frame: CGRect = UIScreen.main.bounds
     var viewcontroller: UIViewController?
+	
+	public var py_callback: PyCallback?
+	
+	var displayLink: CADisplayLink?
+	
+	init() {
+		
+	}
+	
 }
 
 extension WebViewer: WebViewer_PyProtocol {
     
-    
+	public func set_callback(callback: PyPointer) {
+		py_callback = .init(callback: callback)
+	}
     
     var can_go_forward: Bool { view.canGoForward}
     
     var can_go_back: Bool { view.canGoBack}
-    
-	public func set_frame(x: Double, y: Double, w: Double, h: Double) {
-        print(self,x,y,w,h)
-        view.frame = .init(x: x.retinaScaled, y: y.retinaScaled, width: w.retinaScaled, height: h.retinaScaled)
-    }
-    
+	
 	public func show() {
-        guard
-            let window = UIApplication.shared.windows.first,
-            let kivy_vc = window.rootViewController
-        else { return }
+		guard
+			let window = UIApplication.shared.windows.first,
+			let kivy_vc = window.rootViewController
+        else { fatalError() }
         kivy_vc.view.addSubview(view)
     }
     
@@ -142,16 +168,28 @@ extension WebViewer: WebViewer_PyProtocol {
 }
 
 
-public class JavaViewer {
+
+
+public class JavaViewer: WKBase {
     
-    let view = WKWebView()
+    public let view = WKWebView()
     var frame: CGRect = UIScreen.main.bounds
     var viewcontroller: UIViewController?
-    
-    
+	var displayLink: CADisplayLink?
+	public var py_callback: PyCallback?
+	
+	public init() {
+		
+	}
+	public func set_callback(callback: PyPointer) {
+		py_callback = .init(callback: callback)
+	}
 }
 
 extension JavaViewer: JavaViewer_PyProtocol {
+	
+	
+	
 	public func load_html(html: String) {
         DispatchQueue.global().async {
             DispatchQueue.main.async { [weak self] in
@@ -168,11 +206,13 @@ extension JavaViewer: JavaViewer_PyProtocol {
         }
         
     }
+	
+	
     
-	public func set_frame(x: Double, y: Double, w: Double, h: Double) {
-        print("set frame:",x,y,w,h)
-        view.frame = .init(x: x.retinaScaled, y: y.retinaScaled, width: w.retinaScaled, height: h.retinaScaled)
-    }
+//	public func set_frame(x: Double, y: Double, w: Double, h: Double) {
+//        print("set frame:",x,y,w,h)
+//        view.frame = .init(x: x.retinaScaled, y: y.retinaScaled, width: w.retinaScaled, height: h.retinaScaled)
+//    }
     
 	public func show() {
         guard
@@ -210,3 +250,7 @@ extension JavaViewer: JavaViewer_PyProtocol {
         view.reload()
     }
 }
+
+
+
+
